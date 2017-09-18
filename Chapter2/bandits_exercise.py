@@ -1,4 +1,4 @@
-from Chapter2.bandit_testbed import KArmedBandit
+from Chapter2.bandit_testbed import KArmedBanditNS, KArmedBandit
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -10,12 +10,12 @@ def argmax(arr):
     return np.random.choice(indices[0])
 
 
-def epsilon_greedy(num_trials=2000, k=10, epsilon=0.1, timesteps=1000, init=0.):
-
+def epsilon_greedy(num_trials=2000, k=10, epsilon=0.1, timesteps=1000, init=0., alpha=0.1):
     rewards = []
     prob_optimal = []
+    step_size = alpha
     for ep in range(num_trials):
-        env = KArmedBandit(k=10, total_time=timesteps)
+        env = KArmedBanditNS(k=10, total_time=timesteps)
         rew = []
         opt = []
         env.initialize_episode()
@@ -26,13 +26,15 @@ def epsilon_greedy(num_trials=2000, k=10, epsilon=0.1, timesteps=1000, init=0.):
                 action = np.random.randint(k)
             else:
                 action = argmax(estimates)
-            rew.append(env.step(action=action))
             if action == env.best_arm:
                 opt.append(1.)
             else:
                 opt.append(0.)
+            rew.append(env.step(action=action))
             acted[action] += 1.
-            estimates[action] += 0.1 * (rew[-1] - estimates[action])
+            if alpha <= 0.:
+                step_size = 1/acted[action]
+            estimates[action] += step_size * (rew[-1] - estimates[action])
         rewards.append(rew)
         prob_optimal.append(opt)
     return np.mean(rewards, axis=0), np.mean(prob_optimal, axis=0)
@@ -148,5 +150,31 @@ def ucb_run():
     plt.xlabel('Steps')
     plt.savefig('UCB_softmax_comp.png')
 
+
+def nonstationary():
+    r, p = epsilon_greedy(epsilon=0.1, timesteps=10000)
+    plt.figure(1)
+    plt.plot(r)
+    plt.figure(2)
+    plt.plot(p)
+    r, p = epsilon_greedy(epsilon=0.1, timesteps=10000, alpha=-1.)
+    plt.figure(1)
+    plt.plot(r)
+    plt.figure(2)
+    plt.plot(p)
+    plt.figure(1)
+    plt.ylim([0., 1.5])
+    plt.legend([r'constant \alpha', 'sample_average'])
+    plt.title(r'Reward comparison')
+    plt.ylabel('Average Reward')
+    plt.xlabel('Steps')
+    plt.figure(2)
+    plt.ylim([0., 1.])
+    plt.legend([r'constant \alpha', 'sample_average'])
+    plt.title(r'Optimality of policy')
+    plt.ylabel('% Optimal action')
+    plt.xlabel('Steps')
+    plt.show()
+
 if __name__ == '__main__':
-    ucb_run()
+    nonstationary()
