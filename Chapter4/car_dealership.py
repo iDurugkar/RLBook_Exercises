@@ -95,7 +95,7 @@ class CarDealership:
                 #     sp, r = self.step([i, j], self.policy[i, j])
                 #     target += r + self.discount * self.old_val[int(sp[0]), int(sp[1])]
                 # target /= 20.
-                # delta = max(delta, abs(self.value[i, j] - target))
+                delta = max(delta, abs(self.value[i, j] - target))
                 # self.value[i, j] = target
         return delta
 
